@@ -241,11 +241,15 @@ Controller.prototype.onAdPlayPauseClick = function() {
  */
 Controller.prototype.onAdMuteClick = function() {
   if (this.sdkImpl.isAdMuted()) {
-    this.playerWrapper.unmute();
+    if (this.getSettings().syncVolume) {
+      this.playerWrapper.unmute();
+    }
     this.adUi.unmute();
     this.sdkImpl.unmute();
   } else {
-    this.playerWrapper.mute();
+    if (this.getSettings().syncVolume) {
+      this.playerWrapper.mute();
+    }
     this.adUi.mute();
     this.sdkImpl.mute();
   }
@@ -258,7 +262,9 @@ Controller.prototype.onAdMuteClick = function() {
  * @param {number} volume The new volume.
  */
 Controller.prototype.setVolume = function(volume) {
-  this.playerWrapper.setVolume(volume);
+  if (this.getSettings().syncVolume) {
+    this.playerWrapper.setVolume(volume);
+  }
   this.sdkImpl.setVolume(volume);
 };
 

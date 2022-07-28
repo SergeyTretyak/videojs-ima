@@ -307,8 +307,9 @@ AdUi.prototype.updateAdUi =
 AdUi.prototype.unmute = function() {
   this.addClass(this.muteDiv, 'ima-non-muted');
   this.removeClass(this.muteDiv, 'ima-muted');
-  this.sliderLevelDiv.style.width =
-      this.controller.getPlayerVolume() * 100 + '%';
+  // let volume = this.controller.getSettings().syncVolume ? this.controller.getPlayerVolume() : (this.controller.sdkImpl.getVolume() || 1);
+  let volume = this.controller.sdkImpl.getVolume() || 1;
+  this.sliderLevelDiv.style.width = (volume) * 100 + '%';
 };
 
 

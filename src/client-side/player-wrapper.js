@@ -166,7 +166,16 @@ PlayerWrapper.prototype.setUpPlayerIntervals = function() {
  */
 PlayerWrapper.prototype.updateCurrentTime = function() {
   if (!this.contentPlayheadTracker.seeking) {
-    this.contentPlayheadTracker.currentTime = this.vjsPlayer.currentTime();
+    if (this.controller.getSettings().trackByWatchTime) {
+      if (!this.controller.sdkImpl.isAdPlaying()) {
+        const diff = this.vjsPlayer.currentTime() - this.contentPlayheadTracker.previousTime;
+        if (diff * 1000 < this.seekCheckInterval + this.seekThreshold) {
+          this.contentPlayheadTracker.currentTime += diff < 0 ? 0 : diff;
+        }
+      }
+    } else {
+      this.contentPlayheadTracker.currentTime = this.vjsPlayer.currentTime();
+    }
   }
 };
 
@@ -292,10 +301,13 @@ PlayerWrapper.prototype.onPlayerReady = function() {
     this.controller.setSetting('adWillAutoPlay', true);
   }
 
-  // Sync ad volume with player volume.
-  this.onVolumeChange();
+  if (this.controller.getSettings().syncVolume) {
+    // Sync ad volume with player volume.
+    this.onVolumeChange();
+    this.vjsPlayer.on('volumechange', this.onVolumeChange.bind(this));
+  }
+
   this.vjsPlayer.on('fullscreenchange', this.onFullscreenChange.bind(this));
-  this.vjsPlayer.on('volumechange', this.onVolumeChange.bind(this));
 
   this.controller.onPlayerReady();
 };
@@ -368,6 +380,10 @@ PlayerWrapper.prototype.setVolume = function(volume) {
  * Ummute the player.
  */
 PlayerWrapper.prototype.unmute = function() {
+  const volume = this.vjsPlayer.volume();
+  if (volume == 0) {
+    this.vjsPlayer.volume(1);
+  }
   this.vjsPlayer.muted(false);
 };
 
@@ -635,6 +651,7 @@ PlayerWrapper.prototype.reset = function() {
   // the first playthrough of the video passed the second response's
   // mid-roll time.
   this.contentPlayheadTracker.currentTime = 0;
+  this.contentPlayheadTracker.previousTime = 0;
   this.contentComplete = false;
 };
 

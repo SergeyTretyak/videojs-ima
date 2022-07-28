@@ -169,7 +169,16 @@ PlayerWrapper.prototype.setUpPlayerIntervals = function () {
  */
 PlayerWrapper.prototype.updateCurrentTime = function () {
   if (!this.contentPlayheadTracker.seeking) {
-    this.contentPlayheadTracker.currentTime = this.vjsPlayer.currentTime();
+    if (this.controller.getSettings().trackByWatchTime) {
+      if (!this.controller.sdkImpl.isAdPlaying()) {
+        var diff = this.vjsPlayer.currentTime() - this.contentPlayheadTracker.previousTime;
+        if (diff * 1000 < this.seekCheckInterval + this.seekThreshold) {
+          this.contentPlayheadTracker.currentTime += diff < 0 ? 0 : diff;
+        }
+      }
+    } else {
+      this.contentPlayheadTracker.currentTime = this.vjsPlayer.currentTime();
+    }
   }
 };
 
@@ -286,10 +295,13 @@ PlayerWrapper.prototype.onPlayerReady = function () {
     this.controller.setSetting('adWillAutoPlay', true);
   }
 
-  // Sync ad volume with player volume.
-  this.onVolumeChange();
+  if (this.controller.getSettings().syncVolume) {
+    // Sync ad volume with player volume.
+    this.onVolumeChange();
+    this.vjsPlayer.on('volumechange', this.onVolumeChange.bind(this));
+  }
+
   this.vjsPlayer.on('fullscreenchange', this.onFullscreenChange.bind(this));
-  this.vjsPlayer.on('volumechange', this.onVolumeChange.bind(this));
 
   this.controller.onPlayerReady();
 };
@@ -357,6 +369,10 @@ PlayerWrapper.prototype.setVolume = function (volume) {
  * Ummute the player.
  */
 PlayerWrapper.prototype.unmute = function () {
+  var volume = this.vjsPlayer.volume();
+  if (volume == 0) {
+    this.vjsPlayer.volume(1);
+  }
   this.vjsPlayer.muted(false);
 };
 
@@ -603,6 +619,7 @@ PlayerWrapper.prototype.reset = function () {
   // the first playthrough of the video passed the second response's
   // mid-roll time.
   this.contentPlayheadTracker.currentTime = 0;
+  this.contentPlayheadTracker.previousTime = 0;
   this.contentComplete = false;
 };
 
@@ -880,7 +897,9 @@ AdUi.prototype.updateAdUi = function (currentTime, remainingTime, duration, adPo
 AdUi.prototype.unmute = function () {
   this.addClass(this.muteDiv, 'ima-non-muted');
   this.removeClass(this.muteDiv, 'ima-muted');
-  this.sliderLevelDiv.style.width = this.controller.getPlayerVolume() * 100 + '%';
+  // let volume = this.controller.getSettings().syncVolume ? this.controller.getPlayerVolume() : (this.controller.sdkImpl.getVolume() || 1);
+  var volume = this.controller.sdkImpl.getVolume() || 1;
+  this.sliderLevelDiv.style.width = volume * 100 + '%';
 };
 
 /**
@@ -1285,6 +1304,11 @@ var SdkImpl = function SdkImpl(controller) {
   this.adMuted = false;
 
   /**
+   * Ad volume level 0-1.
+   */
+  this.adVolume = 0;
+
+  /**
    * Listener to be called to trigger manual ad break playback.
    */
   this.adBreakReadyListener = undefined;
@@ -1341,8 +1365,7 @@ var SdkImpl = function SdkImpl(controller) {
  * Creates and initializes the IMA SDK objects.
  */
 SdkImpl.prototype.initAdObjects = function () {
-  this.adDisplayContainer = new google.ima.AdDisplayContainer(this.controller.getAdContainerDiv(), this.controller.getContentPlayer());
-
+  this.adDisplayContainer = new google.ima.AdDisplayContainer(this.controller.getAdContainerDiv(), this.controller.getContentPlayer(), this.controller.getSettings().clickTrackingElement || undefined);
   this.adsLoader = new google.ima.AdsLoader(this.adDisplayContainer);
 
   this.adsLoader.getSettings().setVpaidMode(google.ima.ImaSdkSettings.VpaidMode.ENABLED);
@@ -1508,7 +1531,9 @@ SdkImpl.prototype.initAdsManager = function () {
     this.adsManagerDimensions.width = initWidth;
     this.adsManagerDimensions.height = initHeight;
     this.adsManager.init(initWidth, initHeight, google.ima.ViewMode.NORMAL);
-    this.adsManager.setVolume(this.controller.getPlayerVolume());
+    // this.adsManager.setVolume(this.controller.getPlayerVolume());
+    var volume = this.controller.getSettings().syncVolume ? this.controller.getPlayerVolume() : this.getVolume();
+    this.adsManager.setVolume(volume);
     this.initializeAdDisplayContainer();
   } catch (adError) {
     this.onAdError(adError);
@@ -1703,7 +1728,9 @@ SdkImpl.prototype.onPlayerReadyForPreroll = function () {
     try {
       this.controller.showAdContainer();
       // Sync ad volume with content volume.
-      this.adsManager.setVolume(this.controller.getPlayerVolume());
+      // this.adsManager.setVolume(this.controller.getPlayerVolume());
+      var volume = this.controller.getSettings().syncVolume ? this.controller.getPlayerVolume() : this.getVolume();
+      this.adsManager.setVolume(volume);
       this.adsManager.start();
     } catch (adError) {
       this.onAdError(adError);
@@ -1745,6 +1772,7 @@ SdkImpl.prototype.onPlayerVolumeChanged = function (volume) {
     this.adsManager.setVolume(volume);
   }
 
+  this.adVolume = volume;
   if (volume == 0) {
     this.adMuted = true;
   } else {
@@ -1824,7 +1852,7 @@ SdkImpl.prototype.resumeAds = function () {
  * Unmute ads.
  */
 SdkImpl.prototype.unmute = function () {
-  this.adsManager.setVolume(1);
+  this.adsManager.setVolume(this.adVolume || 1);
   this.adMuted = false;
 };
 
@@ -1843,11 +1871,23 @@ SdkImpl.prototype.mute = function () {
  */
 SdkImpl.prototype.setVolume = function (volume) {
   this.adsManager.setVolume(volume);
+
+  this.adVolume = volume;
+
   if (volume == 0) {
     this.adMuted = true;
   } else {
     this.adMuted = false;
   }
+};
+
+/**
+ * Get the volume of the ads. 0-1.
+ *
+ * @return {number} The volume level.
+ */
+SdkImpl.prototype.getVolume = function () {
+  return this.adVolume;
 };
 
 /**
@@ -1871,7 +1911,9 @@ SdkImpl.prototype.playAdBreak = function () {
   if (!this.autoPlayAdBreaks) {
     this.controller.showAdContainer();
     // Sync ad volume with content volume.
-    this.adsManager.setVolume(this.controller.getPlayerVolume());
+    // this.adsManager.setVolume(this.controller.getPlayerVolume());
+    var volume = this.controller.getSettings().syncVolume ? this.controller.getPlayerVolume() : this.getVolume();
+    this.adsManager.setVolume(volume);
     this.adsManager.start();
   }
 };
@@ -2145,11 +2187,15 @@ Controller.prototype.onAdPlayPauseClick = function () {
  */
 Controller.prototype.onAdMuteClick = function () {
   if (this.sdkImpl.isAdMuted()) {
-    this.playerWrapper.unmute();
+    if (this.getSettings().syncVolume) {
+      this.playerWrapper.unmute();
+    }
     this.adUi.unmute();
     this.sdkImpl.unmute();
   } else {
-    this.playerWrapper.mute();
+    if (this.getSettings().syncVolume) {
+      this.playerWrapper.mute();
+    }
     this.adUi.mute();
     this.sdkImpl.mute();
   }
@@ -2161,7 +2207,9 @@ Controller.prototype.onAdMuteClick = function () {
  * @param {number} volume The new volume.
  */
 Controller.prototype.setVolume = function (volume) {
-  this.playerWrapper.setVolume(volume);
+  if (this.getSettings().syncVolume) {
+    this.playerWrapper.setVolume(volume);
+  }
   this.sdkImpl.setVolume(volume);
 };
 
@@ -2406,6 +2454,7 @@ Controller.prototype.onPlayerExitFullscreen = function () {
  * @param {number} volume The new player volume.
  */
 Controller.prototype.onPlayerVolumeChanged = function (volume) {
+  console.log('[ima][deb] onPlayerVolumeChanged', volume);
   this.adUi.onPlayerVolumeChanged(volume);
   this.sdkImpl.onPlayerVolumeChanged(volume);
 };
