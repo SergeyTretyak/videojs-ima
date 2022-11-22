@@ -17,7 +17,7 @@
  * https://www.github.com/googleads/videojs-ima
  */
 
-var browsers = require('./content/capabilities');
+const browsers = require('./content/capabilities');
 
 browsers.browsers.forEach(function(browser) {
 
@@ -26,15 +26,15 @@ browsers.browsers.forEach(function(browser) {
     this.timeout(0);
     this.slow(15000);
 
-    var webdriver = require('selenium-webdriver'),
+    const webdriver = require('selenium-webdriver'),
         until = webdriver.until;
         By = webdriver.By;
 
-    var driver;
+    let driver;
 
-    var timeoutTime = 60000; //ms
+    const timeoutTime = 60000; //ms
 
-    var retryCount = 1; // Will retry once.
+    const retryCount = 1; // Will retry once.
 
     beforeEach(async function() {
       driver = await new webdriver.Builder()

@@ -251,7 +251,7 @@ const ImaDaiPlugin = function(player, options) {
    this.getStreamManager = function() {
     return this.controller.getStreamManager();
   }.bind(this);
-}
+};
 
 /**
  * Initializes the plugin for client-side ads.
@@ -313,7 +313,7 @@ class VodStream {
     } else if (typeof cmsId !== 'string') {
       window.console.error('cmsId error: value must be string.');
       return;
-    } else if(typeof videoId !== 'string') {
+    } else if (typeof videoId !== 'string') {
       window.console.error('videoId error: value must be string.');
       return;
     }
@@ -357,5 +357,5 @@ registerPlugin('imaDai', initDai);
 export default ImaPlugin;
 export {
   VodStream,
-  LiveStream
-}
+  LiveStream,
+};

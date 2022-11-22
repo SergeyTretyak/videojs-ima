@@ -1174,7 +1174,7 @@ AdUi.prototype.setShowCountdown = function (showCountdownIn) {
 };
 
 var name = "videojs-ima";
-var version = "2.0.0";
+var version = "2.1.0";
 var license = "Apache-2.0";
 var main = "./dist/videojs.ima.js";
 var module$1 = "./dist/videojs.ima.es.js";
@@ -1184,8 +1184,8 @@ var scripts = { "contBuild": "watch 'npm run rollup:max' src", "predevServer": "
 var repository = { "type": "git", "url": "https://github.com/googleads/videojs-ima" };
 var files = ["CHANGELOG.md", "LICENSE", "README.md", "dist/", "src/"];
 var peerDependencies = { "video.js": "^5.19.2 || ^6 || ^7" };
-var dependencies = { "@hapi/cryptiles": "^5.1.0", "@videojs/http-streaming": "^2.10.0", "can-autoplay": "^3.0.2", "extend": ">=3.0.2", "lodash": ">=4.17.19", "lodash.template": ">=4.5.0", "videojs-contrib-ads": "^6.9.0" };
-var devDependencies = { "axios": "^0.25.0", "babel-core": "^6.26.3", "babel-preset-env": "^1.7.0", "child_process": "^1.0.2", "chromedriver": "^99.0.0", "conventional-changelog-cli": "^2.2.2", "conventional-changelog-videojs": "^3.0.2", "ecstatic": "^4.1.4", "eslint": "^8.8.0", "eslint-config-google": "^0.9.1", "eslint-plugin-jsdoc": "^3.15.1", "geckodriver": "^2.0.4", "http-server": "^14.1.0", "ini": ">=1.3.7", "mocha": "^9.2.0", "npm-run-all": "^4.1.5", "path": "^0.12.7", "protractor": "^7.0.0", "rimraf": "^2.7.1", "rollup": "^0.51.8", "rollup-plugin-babel": "^3.0.7", "rollup-plugin-copy": "^0.2.3", "rollup-plugin-json": "^2.3.1", "rollup-plugin-uglify": "^2.0.1", "selenium-webdriver": "^3.6.0", "uglify-es": "^3.3.9", "video.js": "^7.17.0", "watch": "^0.13.0", "webdriver-manager": "^12.1.7", "xmldom": "^0.6.0" };
+var dependencies = { "@hapi/cryptiles": "^5.1.0", "can-autoplay": "^3.0.2", "extend": ">=3.0.2", "videojs-contrib-ads": "^6.9.0" };
+var devDependencies = { "axios": "^0.25.0", "babel-core": "^6.26.3", "babel-preset-env": "^1.7.0", "child_process": "^1.0.2", "chromedriver": "^102.0.0", "conventional-changelog-cli": "^2.2.2", "conventional-changelog-videojs": "^3.0.2", "ecstatic": "^4.1.4", "eslint": "^8.8.0", "eslint-config-google": "^0.9.1", "eslint-plugin-jsdoc": "^3.15.1", "geckodriver": "^2.0.4", "http-server": "^14.1.0", "ini": ">=1.3.7", "mocha": "^9.2.0", "npm-run-all": "^4.1.5", "path": "^0.12.7", "protractor": "^7.0.0", "rimraf": "^2.7.1", "rollup": "^0.51.8", "rollup-plugin-babel": "^3.0.7", "rollup-plugin-copy": "^0.2.3", "rollup-plugin-json": "^2.3.1", "rollup-plugin-uglify": "^2.0.1", "selenium-webdriver": "^3.6.0", "uglify-es": "^3.3.9", "video.js": "^7.17.0", "watch": "^0.13.0", "webdriver-manager": "^12.1.7", "xmldom": "^0.6.0" };
 var keywords = ["videojs", "videojs-plugin"];
 var pkg = {
 	name: name,
@@ -1420,18 +1420,16 @@ SdkImpl.prototype.requestAds = function () {
   }
 
   if (this.controller.getSettings().omidMode) {
-    adsRequest.omidAccessModeRules = {};
-    var omidValues = this.controller.getSettings().omidMode;
+    window.console.warn('The additional setting `omidMode` has been removed. ' + 'Use `omidVendorAccess` instead.');
+  }
 
-    if (omidValues.FULL) {
-      adsRequest.omidAccessModeRules[google.ima.OmidAccessMode.FULL] = omidValues.FULL;
-    }
-    if (omidValues.DOMAIN) {
-      adsRequest.omidAccessModeRules[google.ima.OmidAccessMode.DOMAIN] = omidValues.DOMAIN;
-    }
-    if (omidValues.LIMITED) {
-      adsRequest.omidAccessModeRules[google.ima.OmidAccessMode.LIMITED] = omidValues.LIMITED;
-    }
+  if (this.controller.getSettings().omidVendorAccess) {
+    adsRequest.omidAccessModeRules = {};
+    var omidVendorValues = this.controller.getSettings().omidVendorAccess;
+
+    Object.keys(omidVendorValues).forEach(function (vendorKey) {
+      adsRequest.omidAccessModeRules[vendorKey] = omidVendorValues[vendorKey];
+    });
   }
 
   adsRequest.linearAdSlotWidth = this.controller.getPlayerWidth();
@@ -1790,7 +1788,6 @@ SdkImpl.prototype.onPlayerResize = function (width, height) {
   if (this.adsManager) {
     this.adsManagerDimensions.width = width;
     this.adsManagerDimensions.height = height;
-    /* global google */
     /* eslint no-undef: 'error' */
     this.adsManager.resize(width, height, google.ima.ViewMode.NORMAL);
   }
@@ -2032,7 +2029,7 @@ var Controller = function Controller(player, options) {
     timeout: this.settings.timeout,
     prerollTimeout: this.settings.prerollTimeout
   };
-  var adsPluginSettings = this.extend({}, contribAdsDefaults, options.contribAdsSettings || {});
+  var adsPluginSettings = Object.assign({}, contribAdsDefaults, options.contribAdsSettings || {});
 
   this.playerWrapper = new PlayerWrapper(player, adsPluginSettings, this);
   this.adUi = new AdUi(this);
@@ -2057,7 +2054,7 @@ Controller.IMA_DEFAULTS = {
  * @param {Object} options Options to be used in initialization.
  */
 Controller.prototype.initWithSettings = function (options) {
-  this.settings = this.extend({}, Controller.IMA_DEFAULTS, options || {});
+  this.settings = Object.assign({}, Controller.IMA_DEFAULTS, options || {});
 
   this.warnAboutDeprecatedSettings();
 
@@ -2583,7 +2580,7 @@ Controller.prototype.playAdBreak = function () {
  */
 
 /**
- * Adds an EventListener to the AdsManager. For a list of available events,
+ * Ads an EventListener to the AdsManager. For a list of available events,
  * see
  * https://developers.google.com/interactive-media-ads/docs/sdks/html5/client-side/reference/js/google.ima.AdEvent#.Type
  * @param {google.ima.AdEvent.Type} event The AdEvent.Type for which to
@@ -2679,35 +2676,6 @@ Controller.prototype.adsWillPlayMuted = function () {
  */
 Controller.prototype.triggerPlayerEvent = function (name, data) {
   this.playerWrapper.triggerPlayerEvent(name, data);
-};
-
-/**
- * Extends an object to include the contents of objects at parameters 2 onward.
- *
- * @param {Object} obj The object onto which the subsequent objects' parameters
- *     will be extended. This object will be modified.
- * @param {...Object} var_args The objects whose properties are to be extended
- *     onto obj.
- * @return {Object} The extended object.
- */
-Controller.prototype.extend = function (obj) {
-  var arg = void 0;
-  var index = void 0;
-  var key = void 0;
-
-  for (var _len = arguments.length, args = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
-    args[_key - 1] = arguments[_key];
-  }
-
-  for (index = 0; index < args.length; index++) {
-    arg = args[index];
-    for (key in arg) {
-      if (arg.hasOwnProperty(key)) {
-        obj[key] = arg[key];
-      }
-    }
-  }
-  return obj;
 };
 
 /**
@@ -2898,7 +2866,8 @@ PlayerWrapper$2.prototype.reset = function () {
 /**
  * Implementation of the IMA DAI SDK for the plugin.
  *
- * @param {DaiController!} daiController Reference to the parent DAI controller.
+ * @param {DaiController!} daiController Reference to the parent DAI
+ * controller.
  *
  * @constructor
  * @struct
@@ -3000,7 +2969,6 @@ SdkImpl$2.prototype.onAddTrack = function (event) {
   var _this = this;
 
   var track = event.track;
-  console.log('TRACK', track);
   if (track.kind === 'metadata') {
     track.mode = 'hidden';
     track.oncuechange = function (e) {
@@ -3095,12 +3063,10 @@ SdkImpl$2.prototype.onStreamEvent = function (event) {
       this.loadUrl(event.getStreamData().url);
       break;
     case google.ima.dai.api.StreamEvent.Type.ERROR:
-      var errorMessage = event.getStreamData().errorMessage;
-      window.console.warn('Error loading stream, attempting to play backup stream. ' + errorMessage);
+      window.console.warn('Error loading stream, attempting to play backup ' + 'stream. ' + event.getStreamData().errorMessage);
       this.daiController.onErrorLoadingAds(event);
-      var fallbackUrl = this.daiController.getSettings().fallbackStreamUrl;
-      if (fallbackUrl) {
-        this.loadurl(fallbackUrl);
+      if (this.daiController.getSettings().fallbackStreamUrl) {
+        this.loadurl(this.daiController.getSettings().fallbackStreamUrl);
       }
       break;
     case google.ima.dai.api.StreamEvent.Type.AD_BREAK_STARTED:
@@ -3112,8 +3078,7 @@ SdkImpl$2.prototype.onStreamEvent = function (event) {
       this.isAdBreak = false;
       this.adUiDiv.style.display = 'none';
       this.daiController.onAdBreakEnd();
-      var currentTime = this.vjsPlayer.currentTime();
-      if (this.snapForwardTime && this.snapForwardTime > currentTime) {
+      if (this.snapForwardTime && this.snapForwardTime > this.vjsPlayer.currentTime()) {
         this.vjsPlayer.currentTime(this.snapForwardTime);
         this.snapForwardTime = 0;
       }
@@ -3168,8 +3133,8 @@ SdkImpl$2.prototype.requestStream = function () {
   if (this.daiController.getSettings().apiKey) {
     streamRequest.apiKey = this.daiController.getSettings().apiKey;
   }
-  if (this.daiController.getSettings().authKey) {
-    streamRequest.authKey = this.daiController.getSettings().authKey;
+  if (this.daiController.getSettings().authToken) {
+    streamRequest.authToken = this.daiController.getSettings().authToken;
   }
   if (this.daiController.getSettings().adTagParameters) {
     streamRequest.adTagParameters = this.daiController.getSettings().adTagParameters;
@@ -3218,7 +3183,8 @@ SdkImpl$2.prototype.onPlayerDisposed = function () {
 
 /**
  * Returns the instance of the StreamManager.
- * @return {google.ima.StreamManager!} The StreamManager being used by the plugin.
+ * @return {google.ima.StreamManager!} The StreamManager being used by the
+ * plugin.
  */
 SdkImpl$2.prototype.getStreamManager = function () {
   return this.StreamManager;
@@ -3486,7 +3452,8 @@ DaiController.prototype.addEventListener = function (event, callback) {
 
 /**
  * Returns the instance of the StreamManager.
- * @return {google.ima.StreamManager!} The StreamManager being used by the plugin.
+ * @return {google.ima.StreamManager!} The StreamManager being used by the
+ * plugin.
  */
 DaiController.prototype.getStreamManager = function () {
   return this.sdkImpl.getStreamManager();
@@ -3501,7 +3468,8 @@ DaiController.prototype.getPlayerId = function () {
 };
 
 /**
- * @return {boolean} true if we expect that the stream will autoplay. false otherwise.
+ * @return {boolean} true if we expect that the stream will autoplay. false
+ * otherwise.
  */
 DaiController.prototype.streamWillAutoplay = function () {
   if (this.settings.streamWillAutoplay !== undefined) {
@@ -3736,11 +3704,9 @@ var ImaDaiPlugin = function ImaDaiPlugin(player, options) {
   }.bind(this);
 
   /**
-   * Adds an EventListener to the StreamManager. For a list of available events,
-   * see
-   * https://developers.google.com/interactive-media-ads/docs/sdks/html5/dai/reference/js/StreamEvent
-   * @param {google.ima.StreamEvent.Type} event The StreamEvent.Type for which to
-   *     listen.
+   * Adds an EventListener to the StreamManager.
+   * @param {google.ima.StreamEvent.Type} event The StreamEvent.Type for which
+   * to listen.
    * @param {callback} callback The method to call when the event is fired.
    */
   this.addEventListener = function (event, callback) {
@@ -3749,19 +3715,35 @@ var ImaDaiPlugin = function ImaDaiPlugin(player, options) {
 
   /**
    * Returns the instance of the StreamManager.
-   * @return {google.ima.StreamManager} The StreamManager being used by the plugin.
+   * @return {google.ima.StreamManager} The StreamManager being used by the
+   * plugin.
    */
   this.getStreamManager = function () {
     return this.controller.getStreamManager();
   }.bind(this);
 };
 
+/**
+ * Initializes the plugin for client-side ads.
+ * @param {Object} options Plugin option set on initiation.
+ */
 var init = function init(options) {
   /* eslint no-invalid-this: 'off' */
   this.ima = new ImaPlugin(this, options);
 };
 
-var LiveStream = function LiveStream(streamFormat, assetKey) {
+/**
+ * LiveStream class used for DAI live streams.
+ */
+
+var LiveStream =
+/**
+ * LiveStream class constructor used for DAI live streams.
+ * @param {string} streamFormat stream format, plugin currently supports only
+ * 'hls' streams.
+ * @param {string} assetKey live stream's asset key.
+ */
+function LiveStream(streamFormat, assetKey) {
   _classCallCheck(this, LiveStream);
 
   streamFormat = streamFormat.toLowerCase();
@@ -3779,7 +3761,20 @@ var LiveStream = function LiveStream(streamFormat, assetKey) {
   this.assetKey = assetKey;
 };
 
-var VodStream = function VodStream(streamFormat, cmsId, videoId) {
+/**
+ * VodStream class used for DAI VOD streams.
+ */
+
+
+var VodStream =
+/**
+ * VodStream class constructor used for DAI VOD streams.
+ * @param {string} streamFormat stream format, plugin currently supports only
+ * 'hls' streams.
+ * @param {string} cmsId VOD stream's CMS ID.
+ * @param {string} videoId VOD stream's video ID.
+ */
+function VodStream(streamFormat, cmsId, videoId) {
   _classCallCheck(this, VodStream);
 
   streamFormat = streamFormat.toLowerCase();
@@ -3802,6 +3797,14 @@ var VodStream = function VodStream(streamFormat, cmsId, videoId) {
   this.videoId = videoId;
 };
 
+/**
+ * Initializes the plugin for DAI ads.
+ * @param {Object} stream Accepts either an instance of the LiveStream or
+ * VodStream classes.
+ * @param {Object} options Plugin option set on initiation.
+ */
+
+
 var initDai = function initDai(stream, options) {
   if (stream instanceof LiveStream) {
     options.streamType = 'live';
@@ -3811,7 +3814,7 @@ var initDai = function initDai(stream, options) {
     options.cmsId = stream.cmsId;
     options.videoId = stream.videoId;
   } else {
-    window.console.error('initDai() first parameter must be an instance of LiveStream or VodStream.');
+    window.console.error('initDai() first parameter must be an instance of LiveStream or ' + 'VodStream.');
     return;
   }
 

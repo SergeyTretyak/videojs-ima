@@ -17,7 +17,7 @@
 require('chromedriver');
 require('geckodriver');
 
-var browserstackCapabilities = {
+const browserstackCapabilities = {
   'browserstack.console': 'verbose',
   'browserstack.key' : process.env.BROWSERSTACK_ACCESS_KEY,
   'browserstack.local' : 'true',
@@ -28,7 +28,7 @@ var browserstackCapabilities = {
   'project' : 'videojs_ima'
 }
 
-var browsers = [
+let browsers = [
   {
     name: 'chrome-local',
     server: '', //local

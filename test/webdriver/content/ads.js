@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-const adTags = {
+var adTags = {
   linear: 'https://pubads.g.doubleclick.net/gampad/ads?iu=/21775744923/' +
   'external/single_ad_samples&sz=640x480&cust_params=sample_ct%3Dlinear&' +
   'ciu_szs=300x250%2C728x90&gdfp_req=1&output=vast&unviewed_position_start=1&' +
@@ -52,7 +52,7 @@ const onAdStarted = function(event) {
   log.innerHTML += message + "<br>";
 };
 
-const options = {
+var options = {
   id: 'content_video',
   disableFlagAds: true,
   adTagUrl: adTags[adTagName],
@@ -64,7 +64,7 @@ player.ima(options);
 
 // Remove controls from the player on iPad to stop native controls from stealing
 // our click
-const contentPlayer =  document.getElementById('content_video_html5_api');
+var contentPlayer =  document.getElementById('content_video_html5_api');
 if ((navigator.userAgent.match(/iPad/i) ||
       navigator.userAgent.match(/Android/i)) &&
     contentPlayer.hasAttribute('controls')) {

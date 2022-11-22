@@ -156,6 +156,7 @@ Controller.prototype.getIsIos = function() {
   return this.isIos;
 };
 
+
 /**
  * Inject the ad container div into the DOM.
  *
@@ -164,6 +165,7 @@ Controller.prototype.getIsIos = function() {
 Controller.prototype.injectAdContainerDiv = function(adContainerDiv) {
   this.playerWrapper.injectAdContainerDiv(adContainerDiv);
 };
+
 
 /**
  * @return {HTMLElement} The div for the ad container.

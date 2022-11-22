@@ -7,7 +7,7 @@ process.chdir(path.resolve(__dirname, '..'));
 const commands = [
   'conventional-changelog -p videojs -i CHANGELOG.md -s -r 0',
   'git add CHANGELOG.md'
-]
+];
 
 exec(commands.join(' && '), (err, stdout, stderr) => {
   if (err) {

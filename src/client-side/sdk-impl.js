@@ -17,18 +17,18 @@
  * https://www.github.com/googleads/videojs-ima
  */
 
-import pkg from '../../package.json';
+ import pkg from '../../package.json';
 
-/**
- * Implementation of the IMA SDK for the plugin.
- *
- * @param {Object} controller Reference to the parent controller.
- *
- * @constructor
- * @struct
- * @final
- */
-const SdkImpl = function (controller) {
+ /**
+  * Implementation of the IMA SDK for the plugin.
+  *
+  * @param {Object} controller Reference to the parent controller.
+  *
+  * @constructor
+  * @struct
+  * @final
+  */
+const SdkImpl = function(controller) {
   /**
    * Plugin controller.
    */
@@ -234,7 +234,7 @@ SdkImpl.prototype.requestAds = function () {
 
   if (this.controller.getSettings().omidMode) {
     window.console.warn('The additional setting `omidMode` has been removed. ' +
-      'Use `omidVendorAccess` instead.');
+                        'Use `omidVendorAccess` instead.');
   }
 
   if (this.controller.getSettings().omidVendorAccess) {
