@@ -1902,9 +1902,11 @@ SdkImpl.prototype.playAdBreak = function () {
   if (!this.autoPlayAdBreaks) {
     this.controller.showAdContainer();
     // Sync ad volume with content volume.
-    // this.adsManager.setVolume(this.controller.getPlayerVolume());
-    var volume = this.controller.getSettings().syncVolume ? this.controller.getPlayerVolume() : this.getVolume();
-    this.adsManager.setVolume(volume);
+    var currentAd = this.controller.getCurrentAd();
+    if (!currentAd || currentAd.isLinear()) {
+      var volume = this.controller.getSettings().syncVolume ? this.controller.getPlayerVolume() : this.getVolume();
+      this.adsManager.setVolume(volume);
+    }
     this.adsManager.start();
   }
 };
@@ -2445,7 +2447,6 @@ Controller.prototype.onPlayerExitFullscreen = function () {
  * @param {number} volume The new player volume.
  */
 Controller.prototype.onPlayerVolumeChanged = function (volume) {
-  console.log('[ima][deb] onPlayerVolumeChanged', volume);
   this.adUi.onPlayerVolumeChanged(volume);
   this.sdkImpl.onPlayerVolumeChanged(volume);
 };
